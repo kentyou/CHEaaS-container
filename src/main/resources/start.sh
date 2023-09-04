@@ -12,4 +12,5 @@
 #     Kentyou - initial implementation
 #*******************************************************************************
 
-java -Dsensinact.config.dir=configuration -jar launch/launcher.jar
+cd /opt/sensiNact/configuration
+java -Dsensinact.config.dir=/opt/sensiNact/configuration -jar /opt/sensiNact/launch/launcher.jar

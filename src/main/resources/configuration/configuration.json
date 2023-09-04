@@ -9,8 +9,8 @@
       "jakarta-rest-whiteboard-feature",
       "northbound-rest-feature"
     ],
-    "repository": "repository",
-    "featureDir": "features"
+    "repository": "/opt/sensiNact/repository",
+    "featureDir": "/opt/sensiNact/features"
   },
    "org.apache.felix.http": {
     "org.osgi.service.http.port": 8082,

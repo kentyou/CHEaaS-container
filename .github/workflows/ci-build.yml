@@ -13,8 +13,28 @@ jobs:
 
     steps:
     - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
+    - name: Extract branch name
+      shell: bash
+      run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+      id: extract_branch
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@2b82ce82d56a2a04d2637cd93a637ae1b359c0a7 # v2.2.0
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@885d1462b80bc1c1c7f0b00334ad271f09369c55 # v2.10.0
+    - name: Setup Docker tag and label names
+      id: docker_meta
+      uses: docker/metadata-action@818d4b7b91585d195f67373fd9cb0332e31a7175 # v4.6.0
+      with:
+        images: ghcr.io/kentyou/cheaas
+        tags: |
+          type=edge,branch=main
+          type=ref,event=pr
+          type=sha
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=semver,pattern={{major}},enable=${{ !startsWith(github.ref, 'refs/tags/v0.') }}
     - name: Set up JDK 17
-      uses: actions/setup-java@v3
+      uses: actions/setup-java@cd89f46ac9d01407894225f350157564c9c7cee2 # v3.12.0
       with:
         java-version: '17'
         distribution: 'temurin'
@@ -25,6 +45,20 @@ jobs:
     # Optional: Uploads the full dependency graph to GitHub to improve the quality of Dependabot alerts this repository can receive
     - name: Update dependency graph
       continue-on-error: true
-      uses: advanced-security/maven-dependency-submission-action@v3.0.2
+      uses: advanced-security/maven-dependency-submission-action@c5ad0fd6b977364190852883b46728f25a9617c3 # v3.0.2
       with:
         directory: '/'
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc # v2.2.0
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Build and Push to GitHub Container Registry
+      uses: docker/build-push-action@2eb1c1961a95fc15694676618e422e8ba1d63825 # v4.4.1
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64/v8,linux/arm/v7
+        push: ${{ steps.extract_branch.outputs.branch == 'main' || startsWith( github.ref, 'refs/tags/' ) }}
+        tags: ${{ steps.docker_meta.outputs.tags }}
+        labels: ${{ steps.docker_meta.outputs.labels }}
